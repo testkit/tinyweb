@@ -1,32 +1,17 @@
 /*
-Copyright (c) 2013 Intel Corporation.
-
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
-
-* Redistributions of works must retain the original copyright notice, this list
-  of conditions and the following disclaimer.
-* Redistributions in binary form must reproduce the original copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
-* Neither the name of Intel Corporation nor the names of its contributors
-  may be used to endorse or promote products derived from this work without
-  specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY INTEL CORPORATION "AS IS"
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-ARE DISCLAIMED. IN NO EVENT SHALL INTEL CORPORATION BE LIABLE FOR ANY DIRECT,
-INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * Copyright (c) 2013-2014 Intel Corporation, All Rights Reserved
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
 
 Authors:
         Wang, Jing J <jing.j.wang@intel.com>
-
 */
 
 #define _XOPEN_SOURCE 600  // For PATH_MAX on linux
@@ -53,72 +38,18 @@ Authors:
 
 #define MAX_OPTIONS 40
 #define MAX_CONF_FILE_LINE_SIZE (8 * 1024)
-
+extern void websocket_ready_handler(struct mg_connection *);
+extern int websocket_data_handler(struct mg_connection *, int, char *, size_t);
 static int exit_flag;
 static char server_name[40];        // Set by init_server_name()
 static char config_file[PATH_MAX];  // Set by process_command_line_arguments()
 static struct mg_context *ctx;      // Set by start_server()
-
 #if !defined(CONFIG_FILE)
 #define CONFIG_FILE "mongoose.conf"
 #endif /* !CONFIG_FILE */
-
-static void *get_app(struct mg_connection *conn) {
-  char app_name[128];
-  const char *uri = mg_get_request_info(conn)->uri;
-  if (strcmp(uri, "/") == 0){
-    snprintf(app_name, sizeof(app_name), "/usr/lib%secho.so", uri);
-  }else{
-    snprintf(app_name, sizeof(app_name), "/usr/lib%s.so", uri);
-  }
-//  printf("app_name=%s\n", app_name);
-  void *ws_handle = NULL;
-  if ((ws_handle = dlopen(app_name, RTLD_LAZY)) == NULL) {
-    fprintf(stderr, "%s: cannot load %s\n", __func__, app_name);
-    return NULL;
-  }
-  return ws_handle;
-}
-
-static void websocket_ready_handler(struct mg_connection *conn){
-  const char *prot = mg_get_header(conn, "Sec-WebSocket-Protocol");
-  char buf[100];
-  if (prot){
-      char *p = NULL;
-      snprintf(buf, sizeof(buf), "%s", prot);
-      if ((p = strrchr(buf, ',')) != NULL) {
-        *p = '\0';
-      } 
-      mg_printf(conn, "Sec-WebSocket-Protocol: %s\r\n", buf);
-  }
-  mg_printf(conn, "\r\n");
-}
-
-
-// Arguments:
-//   flags: first byte of websocket frame, see websocket RFC,
-//          http://tools.ietf.org/html/rfc6455, section 5.2
-//   data, data_len: payload data. Mask, if any, is already applied.
-static int websocket_data_handler(struct mg_connection *conn, int flags,
-                                  char *data, size_t data_len){
-  void *ws_handle = get_app(conn);
-  if (ws_handle == NULL) {
-    return 0;
-  }
-  int (*func)(struct mg_connection *, int, char *, size_t) = dlsym(ws_handle, "websocket_data");
-  if (func == NULL){
-    dlclose(ws_handle);
-    return 0; 
-  }
-  int ret = (*func)(conn, flags, data, data_len);
-  dlclose(ws_handle);
-  return ret; 
-}
-
 static void WINCDECL signal_handler(int sig_num) {
-  exit_flag = sig_num;
+    exit_flag = sig_num;
 }
-
 
 static void die(const char *fmt, ...) {
   va_list ap;
@@ -319,7 +250,8 @@ static void start_server(int argc, char *argv[]) {
 }
 
 int main(int argc, char *argv[]) {
-  init_server_name();
+  signal(SIGCHLD, SIG_IGN);
+  signal(SIGHUP, SIG_IGN);
   pid_t pid = 0;
   pid = fork();
   if (pid < 0) {
@@ -327,23 +259,34 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
   if (pid > 0) {
-    fprintf(stderr, "Daemonize\n");
+    sleep(1);
     exit(0);
   }
   umask(0);
   setsid();
+  chdir("/");
+
+  init_server_name();
   start_server(argc, argv);
-  printf("%s started on port(s) %s with web root [%s]\n",
+  pid = getpid();
+  printf("%s started on port(s) %s with document root [%s], pid [%d]\n",
          server_name, mg_get_option(ctx, "listening_ports"),
-         mg_get_option(ctx, "document_root"));
+         mg_get_option(ctx, "document_root"), pid);
+
+  char *pidfile = (char *)mg_get_option(ctx, "pidfile");
+  if (*pidfile) {
+    FILE *fp = fopen(pidfile, "w+");
+    fprintf(fp, "%d", pid);
+    fclose(fp);
+  }
+
   while (exit_flag == 0) {
     sleep(1);
   }
   printf("Exiting on signal %d, waiting for all threads to finish...",
          exit_flag);
+  printf("%s", " done.\n");
   fflush(stdout);
   mg_stop(ctx);
-  printf("%s", " done.\n");
-
   return EXIT_SUCCESS;
 }
