@@ -14,34 +14,30 @@ Authors:
         Wang, Jing J <jing.j.wang@intel.com>
 */
 
+#include <sys/stat.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <signal.h>
 #include <string.h>
+#include <errno.h>
+#include <limits.h>
+#include <stddef.h>
+#include <stdarg.h>
+#include <ctype.h>
+#include <dlfcn.h>
 #include "mongoose.h"
-/*
-void websocket_ready(struct mg_connection *conn) {
-  const char *prot = mg_get_header(conn, "Sec-WebSocket-Protocol");
-  char buf[100];
-  if (prot){
-      char *p = NULL;
-      snprintf(buf, sizeof(buf), "%s", prot);
-      if ((p = strrchr(buf, ',')) != NULL) {
-        *p = '\0';
-      } 
-      mg_printf(conn, "Sec-WebSocket-Protocol: %s\r\n", buf);
-  }
-  mg_printf(conn, "\r\n");
-}
-*/
+
+#include <sys/wait.h>
+#include <unistd.h>
+#include <sys/stat.h>
 
 // Arguments:
 //   flags: first byte of websocket frame, see websocket RFC,
 //          http://tools.ietf.org/html/rfc6455, section 5.2
 //   data, data_len: payload data. Mask, if any, is already applied.
-int websocket_data(struct mg_connection *conn, int flags,
+static int websocket_data(struct mg_connection *conn, int flags,
                                   char *data, size_t data_len) {
   unsigned char reply[4];
-  size_t i = 0;
   int offset = 2;
   int ret = 1;
 
@@ -85,4 +81,36 @@ int websocket_data(struct mg_connection *conn, int flags,
   // Returning zero means stoping websocket conversation.
   // Close the conversation if client has sent us "exit" string.
   return ret;
+}
+
+void websocket_ready_handler(struct mg_connection *conn){
+  const char *prot = mg_get_header(conn, "Sec-WebSocket-Protocol");
+  char buf[100];
+  if (prot){
+    char *p = NULL;
+    snprintf(buf, sizeof(buf), "%s", prot);
+    if ((p = strrchr(buf, ',')) != NULL) {
+      *p = '\0';
+    } 
+    mg_printf(conn, "Sec-WebSocket-Protocol: %s\r\n", buf);
+  }
+  mg_printf(conn, "\r\n");
+}
+
+
+// Arguments:
+//   flags: first byte of websocket frame, see websocket RFC,
+//          http://tools.ietf.org/html/rfc6455, section 5.2
+//   data, data_len: payload data. Mask, if any, is already applied.
+int websocket_data_handler(struct mg_connection *conn, int flags,
+                                  char *data, size_t data_len){
+  const char *prot = mg_get_header(conn, "Sec-WebSocket-Protocol");
+  if (prot && (strncmp(prot, "foobar", 6) == 0)){
+    return 0;
+  }
+  const char *uri = mg_get_request_info(conn)->uri;
+  if (strcmp(uri, "/") == 0 || strcmp(uri, "/echo") == 0){
+      return websocket_data(conn, flags, data, data_len);
+  }
+  return 0; 
 }
