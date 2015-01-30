@@ -47,7 +47,7 @@ static int websocket_data(struct mg_connection *conn, int flags,
   if (data_len > 65536) {
     data_len = 65536;
   }  
-  printf("data_len=%d\n",data_len);
+  //printf("data_len=%d\n",data_len);
   int opcode = flags & 0x0f;
   if ((opcode == 0x08) || memcmp(data, ".close", 6)==0){
 //    printf("close frame");
