@@ -350,10 +350,10 @@ public class FullscreenActivity extends Activity {
 
 	private void unzipDocroot() {
 		try {
-			chmode(target_path + "system/libs/" + Build.CPU_ABI + "/unzip", 511);
+			//chmode(target_path + "system/libs/" + Build.CPU_ABI + "/unzip", 511);
 
 			String cmd = target_path
-					+ "system/libs/" + Build.CPU_ABI + "/unzip /sdcard/docroot.zip -o -d "
+					+ "system/libs/" + Build.CPU_ABI + "/busybox unzip /sdcard/docroot.zip -o -d "
 					+ target_path;
 			Log.i("unzip", "unzip docroot begin(cmd=" + cmd);
 			Process unzip = Runtime.getRuntime().exec(cmd);
