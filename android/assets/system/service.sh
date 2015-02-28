@@ -31,15 +31,15 @@ DOCPATH="${SYSPATH%/system}/docroot"
 chmod 0777 $LIBPATH/*
 
 for x in `$LIBPATH/busybox find $DOCPATH -name '*.cgi'`
-do
+do 
 {
-	$LIBPATH/busybox sed -i 's/#!\/bin\/sh/#!\/system\/bin\/sh/g' $x
+	$LIBPATH/busybox sed -ie 's/#!\/bin\/sh/#!\/system\/bin\/sh/g' $x
 	chmod 0777 $x
 }
 done
 
-for x in `$LIBPATH/busybox find $DOCPATH -name '*.cgi' | $LIBPATH/busybox grep '/cgi/'`;do echo `dirname $x`;done | $LIBPATH/busybox sort | $LIBPATH/busybox uniq > cgi
-for src in `cat cgi`;do dst=`echo $src|$LIBPATH/busybox sed -e "s/\/cgi//g"`;cp $src/*.cgi $dst;done
+#for x in `$LIBPATH/busybox find $DOCPATH -name '*.cgi' | $LIBPATH/busybox grep '/cgi/'`;do `$LIBPATH/busybox dirname $x`;done | $LIBPATH/busybox sort | $LIBPATH/busybox uniq > cgi
+#for src in `$LIBPATH/busybox cat cgi`;do dst=`$LIBPATH/busybox sed -e "s/\/cgi//g" $src`;cp $src/*.cgi $dst;done
 
 echo "Launch tinyweb daemon..."
 PATH=$PATH:$LIBPATH $LIBPATH/tinyweb -ssl_certificate $SYSPATH/server.pem -document_root $DOCPATH -listening_ports 8080,8081,8082,8083,8443s -pidfile $SYSPATH/tinyweb.pid
