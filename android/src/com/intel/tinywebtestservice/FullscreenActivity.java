@@ -93,6 +93,25 @@ public class FullscreenActivity extends Activity {
 						p = Runtime.getRuntime().exec(
 								target_path + "system/service.sh -p "
 										+ Build.CPU_ABI, null, null);
+			String line = "", res = "";
+
+			InputStream input = p.getInputStream();
+
+			BufferedReader osRes = new BufferedReader(new InputStreamReader(
+					input, "utf-8"));
+			while ((line = osRes.readLine()) != null)
+				res += line + "\n";
+			osRes.close();
+			input.close();
+
+			input = p.getErrorStream();
+			osRes = new BufferedReader(new InputStreamReader(input, "utf-8"));
+			while ((line = osRes.readLine()) != null)
+				res += line + "\n";
+                        
+			osRes.close();
+			input.close();
+			printLog(res);
 					} catch (IOException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
@@ -101,7 +120,7 @@ public class FullscreenActivity extends Activity {
 			};
 			t.start();
 			t.wait(2000);
-			String line = "", res = "";
+		/*	String line = "", res = "";
 
 			InputStream input = p.getInputStream();
 
@@ -118,7 +137,7 @@ public class FullscreenActivity extends Activity {
 				res += line + "\n";
 			osRes.close();
 			input.close();
-			printLog(res);
+			printLog(res); */
 
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
@@ -350,6 +369,8 @@ public class FullscreenActivity extends Activity {
 
 	private void unzipDocroot() {
 		try {
+	//		chmode(target_path + "system/libs/" + Build.CPU_ABI + "/unzip", 511);
+
 			String cmd = target_path
 					+ "system/libs/" + Build.CPU_ABI + "/busybox unzip /sdcard/docroot.zip -o -d "
 					+ target_path;
