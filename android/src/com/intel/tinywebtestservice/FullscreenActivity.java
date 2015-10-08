@@ -156,7 +156,10 @@ public class FullscreenActivity extends Activity {
                 }
             };
             t.start();
-            t.wait(2000);
+            synchronized(t){
+                t.wait(2000);
+            }
+
         /*	String line = "", res = "";
 
 			InputStream input = p.getInputStream();
