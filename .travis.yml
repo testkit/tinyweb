@@ -1,9 +1,15 @@
-language: cpp
+language: android
+jdk: oraclejdk7
 
-compiler:
-  - gcc
+android:
+  components:
+    - build-tools-19.1.0
+    - android-19
+    - extra
+
 before_script:
   - sudo apt-get update 
+  - sudo apt-get install gcc-4.6 g++-4.6
   - sudo apt-get install tree cmake gcc-4.6-arm-linux-gnueabi g++-4.6-arm-linux-gnueabi libc6-dev-i386 lib32stdc++6 g++-multilib g++-4.6-multilib
   - mkdir build
   - cd build
@@ -28,4 +34,17 @@ before_script:
   - cp ./cgi-getcookie ../dest/arm/  
   - cp ./cgi-getfield ../dest/arm/
   - rm -rf *
-script: tree ../dest/ 
+
+  # build for android
+  - cd ../tools
+  - ./install_android_ndk.sh
+  - cd ../android/native/jni/
+  - ../../../android-ndk/ndk-build
+  - cd ../../
+  # build apk
+  - gradlew build --stacktrace
+  - cp -r build/outputs/apk ../dest/android/
+  - cd ..
+script: 
+  - tree dest/ 
+  - tar -cvzf tnyweb.tar.gz ./dest/
