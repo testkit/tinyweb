@@ -46,5 +46,5 @@ before_script:
   - cp -r build/outputs/apk ../dest/android/
   - cd ..
 script: 
-  - tree ../dest/ 
+  - tree dest/ 
   - tar -cvzf tnyweb.tar.gz ./dest/
