@@ -1,0 +1,31 @@
+language: cpp
+
+compiler:
+  - gcc
+before_script:
+  - sudo apt-get update 
+  - sudo apt-get install tree cmake gcc-4.6-arm-linux-gnueabi g++-4.6-arm-linux-gnueabi libc6-dev-i386 lib32stdc++6 g++-multilib g++-4.6-multilib
+  - mkdir build
+  - cd build
+  # build for x86_64
+  - cmake -Dx86_64=ON .. 
+  - make
+  - cp ./tinyweb ../dest/x86_64/
+  - cp ./cgi-getcookie ../dest/x86_64/
+  - cp ./cgi-getfield ../dest/x86_64/
+  - rm -rf *
+  # build for i386
+  - cmake -Di386=ON .. 
+  - make
+  - cp ./tinyweb ../dest/i386/
+  - cp ./cgi-getcookie ../dest/i386/  
+  - cp ./cgi-getfield ../dest/i386/
+  - rm -rf *
+  # build for arm
+  - cmake -D CMAKE_TOOLCHAIN_FILE=../arm_toolchain.cmake ..
+  - make
+  - cp ./tinyweb ../dest/arm/
+  - cp ./cgi-getcookie ../dest/arm/  
+  - cp ./cgi-getfield ../dest/arm/
+  - rm -rf *
+script: tree ../dest/ 
