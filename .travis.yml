@@ -1,50 +1,53 @@
 language: android
 jdk: oraclejdk7
-
 android:
   components:
-    - build-tools-19.1.0
-    - android-19
-    - extra
-
+  - build-tools-19.1.0
+  - android-19
+  - extra
 before_script:
-  - sudo apt-get update 
-  - sudo apt-get install gcc-4.6 g++-4.6
-  - sudo apt-get install tree cmake gcc-4.6-arm-linux-gnueabi g++-4.6-arm-linux-gnueabi libc6-dev-i386 lib32stdc++6 g++-multilib g++-4.6-multilib
-  - mkdir build
-  - cd build
-  # build for x86_64
-  - cmake -Dx86_64=ON .. 
-  - make
-  - cp ./tinyweb ../dest/x86_64/
-  - cp ./cgi-getcookie ../dest/x86_64/
-  - cp ./cgi-getfield ../dest/x86_64/
-  - rm -rf *
-  # build for i386
-  - cmake -Di386=ON .. 
-  - make
-  - cp ./tinyweb ../dest/i386/
-  - cp ./cgi-getcookie ../dest/i386/  
-  - cp ./cgi-getfield ../dest/i386/
-  - rm -rf *
-  # build for arm
-  - cmake -D CMAKE_TOOLCHAIN_FILE=../arm_toolchain.cmake ..
-  - make
-  - cp ./tinyweb ../dest/arm/
-  - cp ./cgi-getcookie ../dest/arm/  
-  - cp ./cgi-getfield ../dest/arm/
-  - rm -rf *
-
-  # build for android
-  - cd ../tools
-  - ./install_android_ndk.sh
-  - cd ../android/native/jni/
-  - ../../../android-ndk/ndk-build
-  - cd ../../
-  # build apk
-  - gradlew build --stacktrace
-  - cp -r build/outputs/apk ../dest/android/
-  - cd ..
-script: 
-  - tree dest/ 
-  - tar -cvzf tnyweb.tar.gz ./dest/
+- sudo apt-get update
+- sudo apt-get install gcc-4.6 g++-4.6
+- sudo apt-get install tree cmake gcc-4.6-arm-linux-gnueabi g++-4.6-arm-linux-gnueabi
+  libc6-dev-i386 lib32stdc++6 g++-multilib g++-4.6-multilib
+- mkdir build
+- cd build
+- cmake -Dx86_64=ON ..
+- make
+- cp ./tinyweb ../dest/x86_64/
+- cp ./cgi-getcookie ../dest/x86_64/
+- cp ./cgi-getfield ../dest/x86_64/
+- rm -rf *
+- cmake -Di386=ON ..
+- make
+- cp ./tinyweb ../dest/i386/
+- cp ./cgi-getcookie ../dest/i386/
+- cp ./cgi-getfield ../dest/i386/
+- rm -rf *
+- cmake -D CMAKE_TOOLCHAIN_FILE=../arm_toolchain.cmake ..
+- make
+- cp ./tinyweb ../dest/arm/
+- cp ./cgi-getcookie ../dest/arm/
+- cp ./cgi-getfield ../dest/arm/
+- rm -rf *
+- cd ../tools
+- ./install_android_ndk.sh
+- cd ../android/native/jni/
+- ../../../android-ndk/ndk-build
+- cd ../../
+- gradlew build --stacktrace
+- cp -r build/outputs/apk ../dest/android/
+- cd ..
+script:
+- tree dest/
+- tar -cvzf tinyweb.tar.gz ./dest/
+deploy:
+  provider: releases
+  skip_cleanup: true
+  api_key:
+    secure: cGpRQL/OS+/b6Z2ULnAs41l5Oj9ZhCzGPNZ/ozRtGBUMpo8EQlbtiAyvENLn50DhXbT/01+ZkUOgm0jNASAu72UTZIz79393+5AoJfgx7L3cG/i+Hp6HFWFt0N7vPQyK8AdCM401GnhCeSo+/5tLqkgFuGvChAOp5uKaj46dg5U=
+  file: ./tinyweb.tar.gz
+  on:
+    repo: testkit/tinyweb
+    tags: true
+    all_branches: true
