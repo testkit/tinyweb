@@ -30,11 +30,18 @@ before_script:
 - cp ./cgi-getcookie ../dest/arm/
 - cp ./cgi-getfield ../dest/arm/
 - rm -rf *
+
+#build android ndk binary
 - cd ../tools
 - ./install_android_ndk.sh
 - cd ../android/native/jni/
 - ../../../android-ndk/ndk-build
 - cd ../../
+- cp -r ./native/libs ./assets/system/ 
+
+#copy busybox dest
+- cp -r ../tools/busybox_dest/libs ./assets/system/
+
 - gradlew build --stacktrace
 - cp -r build/outputs/apk ../dest/android/
 - cd ..
