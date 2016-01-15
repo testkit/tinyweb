@@ -37,10 +37,10 @@ before_script:
 - cd ../android/native/jni/
 - ../../../android-ndk/ndk-build
 - cd ../../
-- cp -r ./native/libs ./ 
+- cp -r ./native/libs ./assets/system/ 
 
 #copy busybox dest
-- cp -r ../tools/busybox_dest/libs ./
+- cp -r ../tools/busybox_dest/libs ./assets/system/
 
 - gradlew build --stacktrace
 - cp -r build/outputs/apk ../dest/android/
