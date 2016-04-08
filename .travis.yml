@@ -42,7 +42,7 @@ before_script:
 - rm -rf ../libs/*
 - ../../../android-ndk/ndk-build
 - cd ../../
-- rm -rf ./assets/system/*
+- rm -rf ./assets/system/libs/*
 - cp -r ./native/libs ./assets/system/ 
 
 ## copy busybox dest
@@ -60,7 +60,7 @@ before_script:
 - rm -rf ../libs/*
 - ../../../android-ndk/ndk-build
 - cd ../../
-- rm -rf ./assets/system/*
+- rm -rf ./assets/system/libs/*
 - cp -r ./native/libs ./assets/system/ 
 
 ## copy busybox dest
