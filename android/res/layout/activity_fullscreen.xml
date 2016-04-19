@@ -45,7 +45,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="@string/start_button" 
-                android:onClick="startService"/>
+                android:onClick="startTinywebService"/>
             <Button
                 android:id="@+id/stop_button"
                 style="?buttonBarButtonStyle"
@@ -53,7 +53,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="@string/stop_button" 
-                android:onClick="stopService"/>
+                android:onClick="stopTinywebService"/>
             <Button
                 android:id="@+id/refresh_button"
                 style="?buttonBarButtonStyle"
