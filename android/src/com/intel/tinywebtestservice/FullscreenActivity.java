@@ -18,12 +18,12 @@ package com.intel.tinywebtestservice;
 
 import android.annotation.TargetApi;
 import android.app.Activity;
+import android.content.Intent;
 import android.content.res.AssetManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.TextView;
@@ -32,14 +32,8 @@ import com.example.tinywebtestservice.util.SystemUiHider;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.lang.reflect.Method;
-
-import com.intel.tinywebtestservice.R;
 
 /**
  * An example full-screen activity that shows and hides the system UI (i.e.
@@ -98,7 +92,7 @@ public class FullscreenActivity extends Activity {
     };
     private TextView tv;
     private String target_path;
-    private String full_log = "";
+    private static String full_log = "";
     private Process p;
 
     //create a Handler for updating UI
@@ -121,80 +115,6 @@ public class FullscreenActivity extends Activity {
         handler.sendMessage(message);
     }
 
-        private void runService() {
-
-        try {
-            Thread t = new Thread() {
-                public void run() {
-                    try {
-                        p = Runtime.getRuntime().exec(
-                                target_path + "system/service.sh -p "
-                                        + Build.CPU_ABI, null, null);
-                        String line = "", res = "";
-
-                        InputStream input = p.getInputStream();
-
-                        BufferedReader osRes = new BufferedReader(new InputStreamReader(
-                                input, "utf-8"));
-                        while ((line = osRes.readLine()) != null)
-                            res += line + "\n";
-                        osRes.close();
-                        input.close();
-
-                        input = p.getErrorStream();
-                        osRes = new BufferedReader(new InputStreamReader(input, "utf-8"));
-                        while ((line = osRes.readLine()) != null)
-                            res += line + "\n";
-
-                        osRes.close();
-                        input.close();
-                        printLog(res);
-                    } catch (IOException e) {
-                        // TODO Auto-generated catch block
-                        e.printStackTrace();
-                    }
-                }
-            };
-            t.start();
-            synchronized(t){
-                t.wait(2000);
-            }
-
-        /*	String line = "", res = "";
-
-			InputStream input = p.getInputStream();
-
-			BufferedReader osRes = new BufferedReader(new InputStreamReader(
-					input, "utf-8"));
-			while ((line = osRes.readLine()) != null)
-				res += line + "\n";
-			osRes.close();
-			input.close();
-
-			input = p.getErrorStream();
-			osRes = new BufferedReader(new InputStreamReader(input, "utf-8"));
-			while ((line = osRes.readLine()) != null)
-				res += line + "\n";
-			osRes.close();
-			input.close();
-			printLog(res); */
-
-        } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-        printLog("Service started");
-    }
-
-    private void killService() {
-        try {
-            Runtime.getRuntime().exec(target_path + "/system/service.sh -k");
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-        printLog("Service stopped");
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -220,10 +140,6 @@ public class FullscreenActivity extends Activity {
                     @TargetApi(Build.VERSION_CODES.HONEYCOMB_MR2)
                     public void onVisibilityChange(boolean visible) {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR2) {
-                            // If the ViewPropertyAnimator API is available
-                            // (Honeycomb MR2 and later), use it to animate the
-                            // in-layout UI controls at the bottom of the
-                            // screen.
                             if (mControlsHeight == 0) {
                                 mControlsHeight = controlsView.getHeight();
                             }
@@ -236,15 +152,11 @@ public class FullscreenActivity extends Activity {
                                     .translationY(visible ? 0 : mControlsHeight)
                                     .setDuration(mShortAnimTime);
                         } else {
-                            // If the ViewPropertyAnimator APIs aren't
-                            // available, simply show or hide the in-layout UI
-                            // controls.
                             controlsView.setVisibility(visible ? View.VISIBLE
                                     : View.GONE);
                         }
 
                         if (visible && AUTO_HIDE) {
-                            // Schedule a hide().
                             delayedHide(AUTO_HIDE_DELAY_MILLIS);
                         }
                     }
@@ -271,23 +183,26 @@ public class FullscreenActivity extends Activity {
         target_path = getFilesDir().getPath() + "/";
         assetManager = this.getAssets();
 
-        try {
-            File dir = new File(target_path + "system");
-            if (dir.isDirectory())
-                killService();
-            copyDir("system");
-            chmode(target_path + "system/service.sh", 511);
-            chmode(target_path + "system/libs/" + Build.CPU_ABI + "/busybox", 511);
-
-            dir = new File(target_path + "docroot");
-            if (!dir.isDirectory()) {
-                unzipDocroot();
+        Thread t = new Thread() {
+            public void run() {
+                try {
+                    BufferedReader br = new BufferedReader(new FileReader(new File(Constants.LOG.SERVICE_LOG_FILE)));
+                    String line;
+                    while (true) {
+                        line = br.readLine();
+                        if (line == null) {
+                            Thread.sleep(1000);
+                        } else {
+                            printLog(line);
+                        }
+                    }
+                }catch(IOException e){
+                    e.printStackTrace();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
-        } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-        runService();
+        };
     }
 
     @Override
@@ -309,122 +224,29 @@ public class FullscreenActivity extends Activity {
         mHideHandler.postDelayed(mHideRunnable, delayMillis);
     }
 
-    private void copyDir(String path) {
-        String assets[] = null;
-        try {
-            Log.i("tag", "copyFileOrDir() " + path);
-            assets = assetManager.list(path);
-            if (assets.length == 0) {
-                copyFile(path);
-            } else {
-                String fullPath = target_path + path;
-                Log.i("tag", "path=" + fullPath);
-                File dir = new File(fullPath);
-                if (!dir.exists() && !path.startsWith("images")
-                        && !path.startsWith("sounds")
-                        && !path.startsWith("webkit"))
-                    if (!dir.mkdirs())
-                        ;
-                Log.i("tag", "could not create dir " + fullPath);
-                for (int i = 0; i < assets.length; ++i) {
-                    String p;
-                    if (path.equals(""))
-                        p = "";
-                    else
-                        p = path + "/";
-
-                    if (!path.startsWith("images")
-                            && !path.startsWith("sounds")
-                            && !path.startsWith("webkit"))
-                        copyDir(p + assets[i]);
-                }
-            }
-        } catch (IOException ex) {
-            Log.e("tag", "I/O Exception", ex);
-        }
-    }
-
-    private void copyFile(String filename) {
-        InputStream in = null;
-        OutputStream out = null;
-        String newFileName = null;
-        try {
-            Log.i("tag", "copyFile() " + filename);
-            in = assetManager.open(filename);
-            if (filename.endsWith(".jpg")) // extension was added to avoid
-                // compression on APK file
-                newFileName = target_path
-                        + filename.substring(0, filename.length() - 4);
-            else
-                newFileName = target_path + filename;
-            out = new FileOutputStream(newFileName);
-
-            byte[] buffer = new byte[8192];
-            int read;
-            while ((read = in.read(buffer)) != -1) {
-                out.write(buffer, 0, read);
-            }
-            in.close();
-            in = null;
-            out.flush();
-            out.close();
-            out = null;
-
-        } catch (Exception e) {
-            Log.e("tag", "Exception in copyFile() of " + newFileName);
-            Log.e("tag", "Exception in copyFile() " + e.toString());
-        }
-
-    }
-
-    private int chmode(String filename, int mode) throws Exception {
-        Class fileUtils = Class.forName("android.os.FileUtils");
-        Method setPermissions = fileUtils.getMethod("setPermissions",
-                String.class, int.class, int.class, int.class);
-        return (Integer) setPermissions.invoke(null, filename, mode, -1, -1);
-    }
-
-    private void unzipDocroot() {
-        try {
-            //		chmode(target_path + "system/libs/" + Build.CPU_ABI + "/unzip", 511);
-
-            String cmd = target_path
-                    + "system/libs/" + Build.CPU_ABI + "/busybox unzip /sdcard/docroot.zip -o -d "
-                    + target_path;
-            Log.i("unzip", "unzip docroot begin(cmd=" + cmd);
-            Process unzip = Runtime.getRuntime().exec(cmd);
-            BufferedReader bufferedReader = new BufferedReader(
-                    new InputStreamReader(unzip.getInputStream()));
-            String output;
-            while ((output = bufferedReader.readLine()) != null) {
-                Log.i("unzip", "unzip output = " + output);
-            }
-            unzip.waitFor();
-            Log.i("unzip", "unzip docroot end");
-        } catch (Exception e) {
-            Log.e("unzip", "error: " + e.getCause());
-            e.printStackTrace();
-        }
-    }
-
     /**
      * Called when the user clicks the runService button
      */
     public void refreshData(View view) {
         // Do something in response to button
-        killService();
+        //killService();
         printLog("Refresh docroot...");
-        unzipDocroot();
-        runService();
+        Intent startIntent = new Intent(FullscreenActivity.this, TinywebService.class);
+        startIntent.setAction(Constants.ACTION.REFRESHFOREGROUND_ACTION);
+        startService(startIntent);
     }
 
-    public void stopService(View view) {
+    public void stopTinywebService(View view) {
         printLog("Stop service...");
-        killService();
+        Intent startIntent = new Intent(FullscreenActivity.this, TinywebService.class);
+        startIntent.setAction(Constants.ACTION.STOPFOREGROUND_ACTION);
+        startService(startIntent);
     }
 
-    public void startService(View view) {
+    public void startTinywebService(View view) {
         printLog("Start service...");
-        runService();
+        Intent startIntent = new Intent(FullscreenActivity.this, TinywebService.class);
+        startIntent.setAction(Constants.ACTION.STARTFOREGROUND_ACTION);
+        startService(startIntent);
     }
 }
