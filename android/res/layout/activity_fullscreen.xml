@@ -31,7 +31,6 @@
 
         <LinearLayout
             android:id="@+id/fullscreen_content_controls"
-            style="?buttonBarStyle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom|center_horizontal"
@@ -40,7 +39,6 @@
             tools:ignore="UselessParent" >
             <Button
                 android:id="@+id/start_button"
-                style="?buttonBarButtonStyle"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -48,7 +46,6 @@
                 android:onClick="startTinywebService"/>
             <Button
                 android:id="@+id/stop_button"
-                style="?buttonBarButtonStyle"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -56,7 +53,6 @@
                 android:onClick="stopTinywebService"/>
             <Button
                 android:id="@+id/refresh_button"
-                style="?buttonBarButtonStyle"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
