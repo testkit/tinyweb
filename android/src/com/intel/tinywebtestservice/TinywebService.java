@@ -102,7 +102,9 @@ public class TinywebService extends Service {
             out.flush();
         } catch (Exception e) {
             Log.e(LOG_TAG, "Exception in copyFile() of " + newFileName);
+            printLog("Exception in copyFile() of " + newFileName);
             Log.e(LOG_TAG, "Exception in copyFile() " + e.toString());
+            printLog("Exception in copyFile() " + e.toString());
         }finally {
             try {
                 in.close();
@@ -124,6 +126,7 @@ public class TinywebService extends Service {
         String assets[] = null;
         try {
             Log.i(LOG_TAG, "copyFileOrDir() " + path);
+            printLog("copyFileOrDir() " + path);
             assets = assetManager.list(path);
             if (assets.length == 0) {
                 copyFile(path);
@@ -137,6 +140,7 @@ public class TinywebService extends Service {
                     if (!dir.mkdirs())
                         ;
                 Log.i(LOG_TAG, "could not create dir " + fullPath);
+                printLog("could not create dir " + fullPath);
                 for (int i = 0; i < assets.length; ++i) {
                     String p;
                     if (path.equals(""))
@@ -152,6 +156,7 @@ public class TinywebService extends Service {
             }
         } catch (IOException ex) {
             Log.e(LOG_TAG, "I/O Exception", ex);
+            printLog("I/O Exception: " + ex.getMessage());
         }
     }
 
@@ -163,6 +168,7 @@ public class TinywebService extends Service {
                     + "system/libs/" + Build.CPU_ABI + "/busybox unzip /sdcard/docroot.zip -o -d "
                     + file_path;
             Log.i(LOG_TAG, "unzip docroot begin(cmd=" + cmd);
+            printLog("unzip docroot begin(cmd=" + cmd);
             Process unzip = Runtime.getRuntime().exec(cmd);
             BufferedReader bufferedReader = new BufferedReader(
                     new InputStreamReader(unzip.getInputStream()));
@@ -172,8 +178,10 @@ public class TinywebService extends Service {
             }
             unzip.waitFor();
             Log.i(LOG_TAG, "unzip docroot end");
+            printLog("unzip docroot end");
         } catch (Exception e) {
             Log.e(LOG_TAG, "error: " + e.getCause());
+            printLog("error: " + e.getCause());
             e.printStackTrace();
         }
     }
@@ -241,7 +249,7 @@ public class TinywebService extends Service {
                             input.close();
                         }
                         Log.e(THREADLOGTAG, res);
-                        Log.i(THREADLOGTAG, "end");
+                        printLog(res);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }

@@ -24,6 +24,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.text.method.ScrollingMovementMethod;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.TextView;
@@ -32,8 +33,10 @@ import com.example.tinywebtestservice.util.SystemUiHider;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.PrintWriter;
 
 /**
  * An example full-screen activity that shows and hides the system UI (i.e.
@@ -94,6 +97,8 @@ public class FullscreenActivity extends Activity {
     private String target_path;
     private static String full_log = "";
     private Process p;
+    private Thread logThread = null;
+    private boolean logUpdating = false;
 
     //create a Handler for updating UI
 
@@ -180,29 +185,15 @@ public class FullscreenActivity extends Activity {
         findViewById(R.id.refresh_button).setOnTouchListener(
                 mDelayHideTouchListener);
         tv = (TextView) contentView;
+        tv.setMovementMethod(new ScrollingMovementMethod());
         target_path = getFilesDir().getPath() + "/";
         assetManager = this.getAssets();
 
-        Thread t = new Thread() {
-            public void run() {
-                try {
-                    BufferedReader br = new BufferedReader(new FileReader(new File(Constants.LOG.SERVICE_LOG_FILE)));
-                    String line;
-                    while (true) {
-                        line = br.readLine();
-                        if (line == null) {
-                            Thread.sleep(1000);
-                        } else {
-                            printLog(line);
-                        }
-                    }
-                }catch(IOException e){
-                    e.printStackTrace();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        };
+        printLog("Start service...");
+        restartLogThread();
+        Intent startIntent = new Intent(FullscreenActivity.this, TinywebService.class);
+        startIntent.setAction(Constants.ACTION.STARTFOREGROUND_ACTION);
+        startService(startIntent);
     }
 
     @Override
@@ -224,6 +215,60 @@ public class FullscreenActivity extends Activity {
         mHideHandler.postDelayed(mHideRunnable, delayMillis);
     }
 
+    private void restartLogThread(){
+        logUpdating = false;
+        try {
+            Thread.sleep(200);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        if(!logUpdating) {
+            logThread = new Thread() {
+                public void run() {
+                    try {
+                        BufferedReader br = new BufferedReader(new FileReader(new File(Constants.LOG.SERVICE_LOG_FILE)));
+                        String line;
+                        while (logUpdating) {
+                            line = br.readLine();
+                            if (line == null) {
+                                Thread.sleep(1000);
+                            } else {
+                                printLog(line);
+                            }
+                        }
+                    }catch(IOException e){
+                        e.printStackTrace();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            };
+            logUpdating = true;
+            logThread.start();
+        }
+    }
+
+    private void clearLog(){
+        logUpdating = false;
+        PrintWriter writer = null;
+        try {
+            writer = new PrintWriter(Constants.LOG.SERVICE_LOG_FILE);
+            writer.print("");
+            writer.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        restartLogThread();
+
+        Message message = new Message();
+        Bundle bundle = new Bundle();
+        full_log = "";
+        bundle.putString("LOG", full_log);
+        message.setData(bundle);
+        handler.sendMessage(message);
+    }
+
     /**
      * Called when the user clicks the runService button
      */
@@ -238,13 +283,16 @@ public class FullscreenActivity extends Activity {
 
     public void stopTinywebService(View view) {
         printLog("Stop service...");
+        clearLog();
         Intent startIntent = new Intent(FullscreenActivity.this, TinywebService.class);
         startIntent.setAction(Constants.ACTION.STOPFOREGROUND_ACTION);
         startService(startIntent);
+        //printLog("Service is stopped");
     }
 
     public void startTinywebService(View view) {
         printLog("Start service...");
+        restartLogThread();
         Intent startIntent = new Intent(FullscreenActivity.this, TinywebService.class);
         startIntent.setAction(Constants.ACTION.STARTFOREGROUND_ACTION);
         startService(startIntent);

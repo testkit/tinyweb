@@ -15,7 +15,9 @@
         android:id="@+id/fullscreen_content"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:scrollbars = "vertical"
         android:keepScreenOn="true"
+        android:gravity="bottom"
         android:text="@string/output_content"
         android:textColor="#ffffff" />
 
