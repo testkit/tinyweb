@@ -31,6 +31,15 @@ before_script:
 - cp ./cgi-getfield ../dest/arm/
 - rm -rf *
 
+#build ostro binary
+- ../tools/install_ostro_sdk.sh
+- cmake -D CMAKE_TOOLCHAIN_FILE=../ostro_toolchain.cmake ..
+- make
+- cp ./tinyweb ../dest/ostro/
+- cp ./cgi-getcookie ../dest/ostro/
+- cp ./cgi-getfield ../dest/ostro/
+- rm -rf *
+
 #build android ndk binary
 - cd ../tools
 - ./install_android_ndk.sh
@@ -48,7 +57,7 @@ before_script:
 ## copy busybox dest
 - cp -r ../tools/busybox_dest/libs ./assets/system/
 
-- gradlew build --stacktrace
+- ./gradlew build --stacktrace
 - cp -r build/outputs/apk ../dest/android_PIE/
 - cd ..
 
@@ -66,7 +75,7 @@ before_script:
 ## copy busybox dest
 - cp -r ../tools/busybox_dest/libs ./assets/system/
 
-- gradlew build --stacktrace
+- ./gradlew build --stacktrace
 - cp -r build/outputs/apk ../dest/android_non_PIE/
 - cd ..
 
